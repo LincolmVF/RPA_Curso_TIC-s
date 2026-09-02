@@ -1,0 +1,28 @@
+name: Actualizar Docker Automáticamente
+
+# Esto le dice a GitHub que se ejecute cada vez que hagas push a la rama principal (main o master)
+on:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest # GitHub usará un servidor Linux para hacer el trabajo
+
+    steps:
+      - name: Descargar el código del repo
+        uses: actions/checkout@v3
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir y subir la imagen a Docker Hub
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          # IMPORTANTE: Cambia "tu_usuario_de_docker" por tu usuario REAL en Docker Hub en minúsculas
+          tags: lincolmvf/rpa-infotec:latest
