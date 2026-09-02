@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 4. Copiamos TODOS tus archivos al contenedor (bot.py y api.py)
 COPY . .
 
-# 5. Abrimos el puerto 8000 para que tu Backend pueda comunicarse con este bot
-EXPOSE 8000
+# 5. Abrimos el puerto 3001 para que tu Backend pueda comunicarse con este bot
+EXPOSE 3001
 
 # 6. Comando OBLIGATORIO que enciende el servidor API y lo deja escuchando 24/7
-ENTRYPOINT ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "3001"]
