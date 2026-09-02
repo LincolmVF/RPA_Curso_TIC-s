@@ -1,16 +1,18 @@
-# 1. Usamos la imagen oficial de Playwright (versión Python)
-# Esto nos ahorra horas de instalar dependencias de Linux para los navegadores
+# 1. Usamos la imagen oficial de Playwright
 FROM mcr.microsoft.com/playwright/python:v1.42.0-jammy
 
-# 2. Definimos la carpeta de trabajo dentro del contenedor
+# 2. Definimos la carpeta de trabajo
 WORKDIR /app
 
-# 3. Copiamos el archivo de requerimientos y lo instalamos
+# 3. Copiamos los requerimientos y los instalamos
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4. Copiamos tu código fuente al contenedor (asumiendo que se llama bot.py)
-COPY bot.py .
+# 4. Copiamos TODOS tus archivos al contenedor (bot.py y api.py)
+COPY . .
 
-# 5. Comando que se ejecutará al iniciar el contenedor
-CMD ["python", "bot.py"]
+# 5. Abrimos el puerto 8000 para que tu Backend pueda comunicarse con este bot
+EXPOSE 8000
+
+# 6. Comando OBLIGATORIO que enciende el servidor API y lo deja escuchando 24/7
+ENTRYPOINT ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
