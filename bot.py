@@ -2,6 +2,8 @@ from playwright.sync_api import sync_playwright
 import json
 import datetime
 import re
+import sys # <-- NUEVO: Para recibir argumentos desde la terminal/backend
+import requests # <-- NUEVO: Para enviar el JSON a tu backend en el futuro
 
 def consultar_infotec_con_detalle(producto_buscar):
     respuesta = {
@@ -14,29 +16,29 @@ def consultar_infotec_con_detalle(producto_buscar):
     }
 
     with sync_playwright() as p:
-        # --- SOLUCIÓN PANTALLA COMPLETA ---
-        # 1. Lanzamos Chromium maximizado
+        # 1. Lanzamos Chromium de forma invisible (headless=True)
         browser = p.chromium.launch(headless=True)
-        # 2. Desactivamos el tamaño por defecto (viewport) para que ocupe todo el monitor
         context = browser.new_context(no_viewport=True)
-        # 3. Creamos la página en ese contexto amplio
         page = context.new_page()
 
         try:
             # 1. Búsqueda principal
             query_url = producto_buscar.replace(" ", "+")
             url_busqueda = f"https://www.infotec.com.pe/busqueda?controller=search&search_query={query_url}"
-            page.goto(url_busqueda, timeout=10000)
+            
+            # --- CAMBIO 1: TIMEOUT AUMENTADO A 60 SEGUNDOS (60000 ms) ---
+            page.goto(url_busqueda, timeout=60000)
 
-            page.wait_for_selector('#js-product-list', timeout=5000)
+            # --- CAMBIO 2: TIMEOUT AUMENTADO A 30 SEGUNDOS ---
+            page.wait_for_selector('#js-product-list', timeout=30000)
 
-            # 2. Capturamos URLs de los primeros 3 productos de la grilla
+            # 2. Capturamos URLs de los productos de la grilla (sin el límite de 3)
             links_productos = []
             tarjetas = page.locator('article.js-product-miniature').all()
             for tarjeta in tarjetas:
                 try:
-                    # En la grilla, el link suele estar en la imagen (thumbnail) o en el título
-                    enlace = tarjeta.locator('a.thumbnail, .product-title a').first.get_attribute('href', timeout=2000)
+                    # También le subimos el tiempo aquí un poco por si la carga es lenta
+                    enlace = tarjeta.locator('a.thumbnail, .product-title a').first.get_attribute('href', timeout=5000)
                     if enlace:
                         links_productos.append(enlace)
                 except:
@@ -46,32 +48,30 @@ def consultar_infotec_con_detalle(producto_buscar):
             for url_detalle in links_productos:
                 try:
                     print(f"Visitando detalle: {url_detalle}")
-                    page.goto(url_detalle, timeout=15000)
+                    
+                    # --- CAMBIO 3: TIMEOUT AUMENTADO A 60 SEGUNDOS ---
+                    page.goto(url_detalle, timeout=60000)
 
-                    # --- Extracción ajustada al HTML real ---
+                    # TÍTULO
+                    titulo = page.locator('h1.h1.page-title span').first.inner_text(timeout=10000)
 
-                    # TÍTULO: Exactamente como está en el HTML (h1.h1.page-title)
-                    titulo = page.locator('h1.h1.page-title span').first.inner_text(timeout=3000)
-
-                    # PRECIO: Exactamente como está en el HTML (.current-price-value)
-                    precio_texto = page.locator('.current-price-value').first.inner_text(timeout=2000)
+                    # PRECIO
+                    precio_texto = page.locator('.current-price-value').first.inner_text(timeout=10000)
                     precios = re.findall(r'[\d,]+(?:\.\d+)?', precio_texto)
                     precio_float = float(precios[0].replace(',', '')) if precios else 0.0
 
-                    # STOCK: Buscamos el botón COMPRAR (.add-to-cart)
-                    tiene_stock = page.locator('button.add-to-cart').first.is_visible(timeout=1000)
+                    # STOCK
+                    tiene_stock = page.locator('button.add-to-cart').first.is_visible(timeout=5000)
 
-                    # IMAGEN PRINCIPAL: Exactamente como está en el HTML (.js-easyzoom-trigger)
+                    # IMAGEN PRINCIPAL
                     try:
-                        url_imagen = page.locator('a.js-easyzoom-trigger').first.get_attribute('href', timeout=1000)
+                        url_imagen = page.locator('a.js-easyzoom-trigger').first.get_attribute('href', timeout=5000)
                     except:
                         url_imagen = "No disponible"
 
-                    # FICHA TÉCNICA: Extraemos TODO el bloque de descripción corta como texto plano
-                    # El LLM (Gemini/OpenAI) es lo suficientemente inteligente para extraer de aquí "Procesador", "RAM", etc.
+                    # FICHA TÉCNICA
                     try:
-                        bloque_descripcion = page.locator('.product-description-short, .rte-content.product-description').first.inner_text(timeout=2000)
-                        # Limpiamos saltos de línea excesivos
+                        bloque_descripcion = page.locator('.product-description-short, .rte-content.product-description').first.inner_text(timeout=10000)
                         ficha_tecnica = re.sub(r'\n+', ' | ', bloque_descripcion).strip()
                     except:
                         ficha_tecnica = "No se pudo extraer la descripción detallada"
@@ -82,7 +82,7 @@ def consultar_infotec_con_detalle(producto_buscar):
                         "tiene_stock_inmediato": tiene_stock,
                         "url_producto": url_detalle,
                         "url_imagen": url_imagen,
-                        "especificaciones_crudas": ficha_tecnica # Enviamos el texto crudo a la IA
+                        "especificaciones_crudas": ficha_tecnica
                     })
                     
                     page.wait_for_timeout(500)
@@ -104,9 +104,31 @@ def consultar_infotec_con_detalle(producto_buscar):
 
     return json.dumps(respuesta, indent=2, ensure_ascii=False)
 
+
 if __name__ == "__main__":
-    print("Iniciando Escaneo Detallado en Pantalla Completa...")
-    producto = "impresoras epson" 
+    # --- CAMBIO 4: PREPARANDO PARA EL BACKEND ---
+    # sys.argv capta las palabras que le mandes al ejecutar el archivo
+    # sys.argv[0] es "bot.py", sys.argv[1] será el producto.
+    
+    if len(sys.argv) > 1:
+        # Si el backend le mandó un producto, usa ese:
+        producto = sys.argv[1] 
+    else:
+        # Si no le mandaste nada, usa este por defecto para que no falle:
+        producto = "impresoras epson" 
+
+    print(f"Iniciando Escaneo Detallado de: '{producto}' ...")
     resultado_json = consultar_infotec_con_detalle(producto)
+    
     print("\n--- REPORTE JSON PARA LA IA ---")
     print(resultado_json)
+
+    # --- CAMBIO 5: EL FUTURO (COMENTADO POR AHORA) ---
+    # Cuando tengas tu backend listo, descomentas esto y el bot le enviará 
+    # la respuesta automáticamente sin necesidad de que nadie mire la consola.
+    
+    # url_de_tu_backend = "https://tupaginaweb.com/api/recibir-resultados"
+    # try:
+    #     requests.post(url_de_tu_backend, json=json.loads(resultado_json))
+    # except Exception as error:
+    #     print(f"No se pudo enviar al backend: {error}")
