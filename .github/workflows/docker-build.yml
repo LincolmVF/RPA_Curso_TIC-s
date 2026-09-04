@@ -25,4 +25,4 @@ jobs:
           context: .
           push: true
           # IMPORTANTE: Cambia "tu_usuario_de_docker" por tu usuario REAL en Docker Hub en minúsculas
-          tags: lincolmvf/rpa-infotec:latest
+          tags: lincolmvf/rpa-infotec-v1:latest
