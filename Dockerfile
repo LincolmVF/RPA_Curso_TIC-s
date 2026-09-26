@@ -1,6 +1,6 @@
 # 1. Usamos la imagen oficial de Playwright para Python
 #    (ya trae Chromium + dependencias del sistema necesarias para el scraping headless)
-FROM mcr.microsoft.com/playwright/python:v1.42.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.63.0-jammy
 
 # 2. Definimos la carpeta de trabajo dentro del contenedor
 WORKDIR /app
