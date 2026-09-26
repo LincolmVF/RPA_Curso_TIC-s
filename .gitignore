@@ -1,0 +1,12 @@
+# Variables de entorno y secretos - NUNCA subir esto
+.env
+ 
+# Entornos virtuales de Python
+venv/
+env/
+__pycache__/
+*.pyc
+ 
+# Playwright / navegadores
+ms-playwright/
+ 
