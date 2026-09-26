@@ -1,0 +1,20 @@
+# No metemos secretos ni archivos locales dentro de la imagen.
+# Las credenciales se pasan en runtime con -e o --env-file (ver docker run).
+.env
+
+# Metadatos de git, no hacen falta dentro del contenedor
+.git
+.gitignore
+
+# Evidencias/capturas de corridas locales - no deberían inflar la imagen
+ejecuciones/
+
+# Entornos virtuales y cachés locales de Python
+.venv
+venv
+__pycache__/
+*.pyc
+
+# Archivos de IDE/editor
+.vscode
+.idea
