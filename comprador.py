@@ -27,7 +27,7 @@ load_dotenv()
 # El remitente (FROM) debe ser un sender ya verificado en Brevo
 # (Settings -> Senders, domains, IPs), en tu caso: lincolmvf@gmail.com
 # ----------------------------------------------------------------------
-CORREO_DESTINO = "lincolmvf@gmail.com"
+CORREO_DESTINO = "C28632@utp.edu.pe"
 CORREO_ORIGEN = "lincolmvf@gmail.com"          # Debe ser tu sender verificado en Brevo
 BREVO_LOGIN = os.environ.get("BREVO_SMTP_LOGIN")
 BREVO_KEY = os.environ.get("BREVO_SMTP_KEY")
